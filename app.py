@@ -1,14 +1,10 @@
 
-# Expanded app.py for .pyramid with more branches and interactions
+# Fully expanded app.py for .pyramid with deep branching story
 
 from flask import Flask, request
 from twilio.twiml.voice_response import VoiceResponse
 
 app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "Valley Mutant Twilio Game is Running!"
 
 @app.route("/twilio-webhook", methods=['POST'])
 def twilio_webhook():
@@ -28,23 +24,23 @@ def game_choice():
     response = VoiceResponse()
 
     if digits == "1":
-        response.say("You answer the payphone. A voice whispers, 'You are late. The red door is moving.'")
+        response.say("You answer the payphone. A distorted voice whispers, 'You're late. The red door is moving.'")
         gather = response.gather(numDigits=1, action="/payphone-choice", method="POST", barge_in=True, timeout=5)
         gather.say("Press 1 to ask where the door is.")
         gather.say("Press 2 to hang up.")
         gather.say("Press 3 to ask who is speaking.")
     elif digits == "2":
-        response.say("You walk downtown. A stray cat follows you. It meows like it knows you.")
+        response.say("You walk downtown. The streetlights flicker. A stray cat watches you.")
         gather = response.gather(numDigits=1, action="/cat-choice", method="POST", barge_in=True, timeout=5)
         gather.say("Press 1 to pet the cat.")
         gather.say("Press 2 to ignore it and keep walking.")
         gather.say("Press 3 to follow it.")
     elif digits == "3":
-        response.say("You head toward the abandoned mall. The front doors are unlocked, even though the mall has been closed for years.")
+        response.say("You approach the abandoned mall. It looks... open. But it shouldnâ€™t be.")
         gather = response.gather(numDigits=1, action="/mall-choice", method="POST", barge_in=True, timeout=5)
         gather.say("Press 1 to enter through the front.")
         gather.say("Press 2 to sneak into the back.")
-        gather.say("Press 3 to look for another entrance.")
+        gather.say("Press 3 to search for another way in.")
     else:
         response.say("Invalid choice. Try again.")
         response.redirect("/twilio-webhook")
@@ -57,13 +53,13 @@ def payphone_choice():
     response = VoiceResponse()
 
     if digits == "1":
-        response.say("The voice chuckles. 'The red door does not wait. Find the mural in Oak Street Alley. Look away. Then look again.'")
-        response.say("The call ends. You feel like something is watching you.")
+        response.say("The voice chuckles. 'Find the mural in Oak Street Alley. Look away. Then look again.'")
+        response.say("The call ends. A red flyer is stuck to the payphone.")
     elif digits == "2":
-        response.say("You hang up. The payphone rings again. This time, it feels personal.")
+        response.say("You hang up. The payphone rings again. This time, the ring sounds... off.")
     elif digits == "3":
-        response.say("The voice pauses. Then, with certainty, it says: 'You already know me.'")
-        response.say("The call disconnects, but the feeling lingers.")
+        response.say("The voice pauses. 'You already know me. Don't you remember?'")
+        response.say("The call disconnects. The street feels quieter than before.")
     else:
         response.say("Invalid choice. Returning to main menu.")
         response.redirect("/twilio-webhook")
@@ -77,12 +73,12 @@ def cat_choice():
 
     if digits == "1":
         response.say("You pet the cat. It purrs, then spits out a small key. It has a logo for Metrocenter Mall.")
-        response.say("This might be useful later.")
+        response.say("You donâ€™t know why, but you pocket it.")
     elif digits == "2":
-        response.say("You ignore the cat. It follows you for a while, then disappears.")
+        response.say("You ignore the cat. It watches you as you walk. When you glance back, itâ€™s gone.")
     elif digits == "3":
-        response.say("You follow the cat. It walks with purpose, leading you into a dark alley.")
-        response.say("A single payphone sits in the alley, ringing. But it has no cord.")
+        response.say("You follow the cat into an alley. It stops in front of a payphone with no cord.")
+        response.say("The payphone starts ringing.")
     else:
         response.say("Invalid choice. Returning to main menu.")
         response.redirect("/twilio-webhook")
@@ -95,12 +91,12 @@ def mall_choice():
     response = VoiceResponse()
 
     if digits == "1":
-        response.say("You walk through the front doors. A security announcement plays. 'Attention shoppers, todayâ€™s special is... you. Run.'")
+        response.say("You walk through the front doors. The speakers hum. A voice announces, 'Attention shoppers: Prepare for inventory check.'")
     elif digits == "2":
-        response.say("You sneak into the back entrance. A janitor watches you. He doesnâ€™t blink.")
+        response.say("You sneak in through the back entrance. A janitor stands there, motionless, watching.")
     elif digits == "3":
-        response.say("You search for another way in. There is a service entrance, slightly open.")
-        response.say("Inside, faint music plays from unseen speakers. The escalators hum, moving nowhere.")
+        response.say("You search for another way in. A service door is open just a crack.")
+        response.say("Inside, faint music plays from unseen speakers. The escalators move, but there's no power.")
     else:
         response.say("Invalid choice. Returning to main menu.")
         response.redirect("/twilio-webhook")
