@@ -1,94 +1,82 @@
-from flask import Flask, request
-from twilio.twiml.voice_response import VoiceResponse
+
+# Full updated app.py for .pyramid with story, choices, and sound integration
+
+from flask import Flask, request, session
+import twilio.twiml
+from twilio.twiml.voice_response import VoiceResponse, Gather
 
 app = Flask(__name__)
+app.secret_key = "valley_mutant_secret"  # For session handling
 
-@app.route("/")
-def home():
-    return "Valley Mutant Twilio Game is Running!"
-
-@app.route("/twilio-webhook", methods=['POST'])
-def twilio_webhook():
+@app.route("/voice", methods=['GET', 'POST'])
+def voice():
+    """Handles incoming calls and presents story choices with sound."""
     response = VoiceResponse()
 
-    response.say("Welcome to Valley Mutant. The payphone rings. You have three choices.")
-    gather = response.gather(numDigits=1, action="/game-choice", method="POST", barge_in=True, timeout=5)
-    gather.say("Press 1 to answer it.")
-    gather.say("Press 2 to ignore it and walk downtown.")
-    gather.say("Press 3 to head toward the abandoned mall.")
+    # Vaporwave intro
+    response.play("https://your-audio-host.com/vaporwave_intro.mp3")
+    response.say("Welcome to the Valley Mutant experience. The city is wrong. You feel it, donâ€™t you?")
+
+    # First story choice
+    gather = Gather(input="dtmf", num_digits=1, action="/choice1")
+    gather.say("You are at a flickering payphone. Do you... Press 1 to listen to the static. Press 2 to hang up.")
+    response.append(gather)
+    
+    return str(response)
+
+@app.route("/choice1", methods=['GET', 'POST'])
+def choice1():
+    """Handles the first choice and leads to different outcomes."""
+    response = VoiceResponse()
+    digits = request.values.get("Digits")
+
+    if digits == "1":
+        response.play("https://your-audio-host.com/static_noise.mp3")
+        response.say("You hear voices in the static. They know your name.")
+        response.redirect("/dice_roll")
+    elif digits == "2":
+        response.say("You hang up. But the phone rings again. Louder.")
+        response.redirect("/game_over")
 
     return str(response)
 
-@app.route("/game-choice", methods=['POST'])
-def game_choice():
-    digits = request.form.get("Digits", "").strip()
+@app.route("/dice_roll", methods=['GET', 'POST'])
+def dice_roll():
+    """Handles a dice roll event."""
     response = VoiceResponse()
+    response.play("https://your-audio-host.com/dice_roll.mp3")
+    response.say("Rolling the dice. Your fate is being decided.")
 
-    if digits == "1":
-        response.say("You answer the payphone. A voice whispers, You are late. The red door is moving.")
-        gather = response.gather(numDigits=1, action="/payphone-choice", method="POST", barge_in=True, timeout=5)
-        gather.say("Press 1 to ask where the door is.")
-        gather.say("Press 2 to hang up.")
-    elif digits == "2":
-        response.say("You walk downtown. A stray cat follows you. It meows like it knows you.")
-        gather = response.gather(numDigits=1, action="/cat-choice", method="POST", barge_in=True, timeout=5)
-        gather.say("Press 1 to pet the cat.")
-        gather.say("Press 2 to ignore it and keep walking.")
-    elif digits == "3":
-        response.say("You head toward the abandoned mall. The front doors are unlocked, even though the mall has been closed for years.")
-        gather = response.gather(numDigits=1, action="/mall-choice", method="POST", barge_in=True, timeout=5)
-        gather.say("Press 1 to enter through the front.")
-        gather.say("Press 2 to sneak into the back.")
+    # Random success or failure outcome
+    import random
+    roll = random.randint(1, 6)
+    if roll > 3:
+        response.say(f"You rolled a {roll}. You move deeper into the mystery.")
+        response.redirect("/deep_mystery")
     else:
-        response.say("Invalid choice. Try again.")
-        response.redirect("/twilio-webhook")
+        response.say(f"You rolled a {roll}. Something is wrong. Very wrong.")
+        response.redirect("/game_over")
 
     return str(response)
 
-@app.route("/payphone-choice", methods=['POST'])
-def payphone_choice():
-    digits = request.form.get("Digits", "").strip()
+@app.route("/deep_mystery", methods=['GET', 'POST'])
+def deep_mystery():
+    """Continues the story for successful dice rolls."""
     response = VoiceResponse()
-
-    if digits == "1":
-        response.say("The voice chuckles. The red door does not wait. Find the mural in Oak Street Alley. Look away. Then look again.")
-        response.say("The call ends. You feel like something is watching you.")
-    elif digits == "2":
-        response.say("You hang up. The payphone rings again. This time, it feels personal.")
-    else:
-        response.say("Invalid choice. Returning to main menu.")
-        response.redirect("/twilio-webhook")
+    response.say("You step off the train, but the station looks... old. Too old.")
+    response.play("https://your-audio-host.com/creepy_ambience.mp3")
+    response.say("A stranger in a long coat hands you a cassette tape. He whispers, 'Youâ€™ll need this.'")
+    response.redirect("/game_over")
 
     return str(response)
 
-@app.route("/cat-choice", methods=['POST'])
-def cat_choice():
-    digits = request.form.get("Digits", "").strip()
+@app.route("/game_over", methods=['GET', 'POST'])
+def game_over():
+    """Handles the game over sequence."""
     response = VoiceResponse()
-
-    if digits == "1":
-        response.say("You pet the cat. It purrs, then spits out a small key. It has a logo for Metrocenter Mall.")
-        response.say("This might be useful later.")
-    elif digits == "2":
-        response.say("You ignore the cat. It follows you for a while, then disappears.")
-    else:
-        response.say("Invalid choice. Returning to main menu.")
-        response.redirect("/twilio-webhook")
-
-    return str(response)
-
-@app.route("/mall-choice", methods=['POST'])
-def mall_choice():
-    digits = request.form.get("Digits", "").strip()
-    response = VoiceResponse()
-
-    if digits == "1":
-        response.say("You walk through the front doors. A security announcement plays. Attention shoppers, todayâ€™s special is... you. Run.")
-    elif digits == "2":
-        response.say("You sneak into the back entrance. A janitor watches you. He doesnâ€™t blink.")
-    else:
-        response.say("Invalid choice. Returning to main menu.")
-        response.redirect("/twilio-webhook")
+    response.play("https://your-audio-host.com/game_over_sound.mp3")
+    response.say("The city closes around you. Your story ends here. Game over.")
+    response.hangup()
 
     return str(response)
 
