@@ -1,5 +1,3 @@
-# Fully expanded app.py for Valley Mutant with deep branching, expanded mall path, and more failure routes.
-
 from flask import Flask, request, session
 import random
 from twilio.twiml.voice_response import VoiceResponse
@@ -7,9 +5,15 @@ from twilio.twiml.voice_response import VoiceResponse
 app = Flask(__name__)
 app.secret_key = "valley_mutant_secret"
 
-# Initialize player stats
+# Initialize player stats and inventory
 def init_stats():
-    return {"strength": 3, "charisma": 2, "perception": 4, "health": 10}
+    return {
+        "strength": 3,
+        "charisma": 2,
+        "perception": 4,
+        "health": 10,
+        "inventory": []
+    }
 
 @app.route("/twilio-webhook", methods=['POST'])
 def twilio_webhook():
@@ -18,6 +22,7 @@ def twilio_webhook():
 
     response = VoiceResponse()
     response.say("Welcome to Valley Mutant. This is a test. The city hums with something unseen. You have choices to make.")
+    
     gather = response.gather(numDigits=1, action="/game-choice", method="POST", barge_in=True, timeout=5)
     gather.say("Press 1 to answer the payphone.")
     gather.say("Press 2 to follow a stray cat downtown.")
@@ -35,23 +40,62 @@ def game_choice():
     digits = request.form.get("Digits", "").strip()
     response = VoiceResponse()
 
-    if digits == "3":
+    if digits == "2":
+        response.redirect("/cat")
+    elif digits == "3":
         response.redirect("/mall")
-
+    
     response.say("Invalid choice. Try again.")
     response.redirect("/twilio-webhook")
+
+    return str(response)
+
+@app.route("/cat", methods=['POST'])
+def cat():
+    response = VoiceResponse()
+    response.say("A stray cat watches you, waiting. It moves with intent.")
+    
+    gather = response.gather(numDigits=1, action="/cat-choice", method="POST", barge_in=True, timeout=5)
+    gather.say("Press 1 to pet the cat.")
+    gather.say("Press 2 to ignore it and keep walking.")
+    gather.say("Press 3 to follow it.")
+    gather.say("Press 4 to see where it leads.")
+
+    return str(response)
+
+@app.route("/cat-choice", methods=['POST'])
+def cat_choice():
+    digits = request.form.get("Digits", "").strip()
+    response = VoiceResponse()
+    stats = session.get("stats", init_stats())
+
+    if digits == "1":
+        response.say("You pet the cat. It purrs, then looks up at you. A moment later, it spits out a small key with a Metrocenter logo on it.")
+        stats["inventory"].append("Metrocenter Key")
+        session["stats"] = stats
+        response.redirect("/mall")
+    elif digits == "2":
+        response.say("You ignore the cat and walk away. As you leave, you swear you hear it whisper something.")
+        response.redirect("/twilio-webhook")
+    elif digits == "3":
+        response.say("You follow the cat. It moves with purpose, leading you through a twisting alleyway.")
+        response.redirect("/cat-follow")
+    elif digits == "4":
+        response.say("The cat stops in front of a payphone. The receiver is off the hook, but no one is there.")
+        response.redirect("/payphone")
 
     return str(response)
 
 @app.route("/mall", methods=['POST'])
 def mall():
     response = VoiceResponse()
-    response.say("You stand before the abandoned Metrocenter Mall. The doors are slightly open, but no one should be inside.")
+    response.say("You arrive at Metrocenter Mall. The air feels thick, like memories are still clinging to the walls.")
+    
     gather = response.gather(numDigits=1, action="/mall-choice", method="POST", barge_in=True, timeout=5)
-    gather.say("Press 1 to enter through the front.")
-    gather.say("Press 2 to sneak into the back.")
-    gather.say("Press 3 to check the security footage.")
-    gather.say("Press 4 to explore the underground tunnels beneath the mall.")
+    gather.say("Press 1 to enter through the front doors.")
+    gather.say("Press 2 to sneak in through an employee entrance.")
+    gather.say("Press 3 to check if anything is still open.")
+    gather.say("Press 4 to use the Metrocenter Key.")
 
     return str(response)
 
@@ -59,77 +103,51 @@ def mall():
 def mall_choice():
     digits = request.form.get("Digits", "").strip()
     response = VoiceResponse()
+    stats = session.get("stats", init_stats())
 
     if digits == "1":
-        response.say("You walk through the front doors. The escalators are moving, even though there’s no power.")
-        response.redirect("/mall-explore")
+        response.say("You walk through the front doors. The lights flicker on, but you swear the mall has been closed for years.")
     elif digits == "2":
-        response.say("You sneak into the back entrance. The janitor closet is unlocked. Something moves inside.")
-        response.redirect("/janitor-room")
+        response.say("You sneak into the back. You hear the distant sound of a janitor’s cart, but no one is pushing it.")
     elif digits == "3":
-        response.say("You find a working security monitor. The footage is grainy, but there’s movement in the food court.")
-        response.redirect("/security-footage")
-    elif digits == "4":
-        response.say("You find a door leading underground. A sign reads: 'AUTHORIZED PERSONNEL ONLY.' It is unlocked.")
-        response.redirect("/underground-mall")
+        response.say("The old arcade is still running, but the machines play games you've never seen before.")
+    elif digits == "4" and "Metrocenter Key" in stats["inventory"]:
+        response.say("You insert the Metrocenter Key into an old maintenance door. A hidden escalator whirs to life, leading down.")
+        response.redirect("/hidden-mall-level")
     else:
-        response.say("Invalid choice. Try again.")
-        response.redirect("/mall")
+        response.say("You don't have the key. The door doesn’t budge.")
+        response.redirect("/twilio-webhook")
 
     return str(response)
 
-@app.route("/mall-explore", methods=['POST'])
-def mall_explore():
+@app.route("/hidden-mall-level", methods=['POST'])
+def hidden_mall_level():
     response = VoiceResponse()
-    response.say("The mall is quiet, but the air feels heavy. You see three possible paths.")
-    gather = response.gather(numDigits=1, action="/mall-decision", method="POST", barge_in=True, timeout=5)
-    gather.say("Press 1 to explore the old arcade.")
-    gather.say("Press 2 to check out the food court.")
-    gather.say("Press 3 to enter a department store that is somehow still fully stocked.")
+    response.say("You step into a part of the mall that shouldn't exist. Mannequins line the walls, watching.")
+    
+    gather = response.gather(numDigits=1, action="/hidden-mall-choice", method="POST", barge_in=True, timeout=5)
+    gather.say("Press 1 to approach a mannequin.")
+    gather.say("Press 2 to check an abandoned store.")
+    gather.say("Press 3 to look for an exit.")
+    gather.say("Press 4 to listen for any sounds.")
 
     return str(response)
 
-@app.route("/mall-decision", methods=['POST'])
-def mall_decision():
+@app.route("/hidden-mall-choice", methods=['POST'])
+def hidden_mall_choice():
     digits = request.form.get("Digits", "").strip()
     response = VoiceResponse()
 
     if digits == "1":
-        response.say("You step into the old arcade. The machines turn on by themselves. A game you don't recognize is waiting for you to play.")
+        response.say("One of the mannequins moves. Its head turns slowly toward you.")
     elif digits == "2":
-        response.say("The food court smells fresh. A tray of hot food sits on a table, untouched. Someone is watching you.")
+        response.say("Inside the store, old sale signs hang untouched. A radio crackles to life, playing an old jingle.")
     elif digits == "3":
-        response.say("The department store is still fully stocked. A mannequin turns its head when you aren't looking.")
-    else:
-        response.say("Invalid choice. Try again.")
-        response.redirect("/mall-explore")
+        response.say("Every hallway leads back to the same spot. The mannequins seem closer now.")
+    elif digits == "4":
+        response.say("A distant voice whispers your name. It sounds familiar.")
 
-    return str(response)
-
-@app.route("/janitor-room", methods=['POST'])
-def janitor_room():
-    response = VoiceResponse()
-    response.say("The janitor closet is filled with old equipment. Something scurries into the shadows.")
-    gather = response.gather(numDigits=1, action="/janitor-decision", method="POST", barge_in=True, timeout=5)
-    gather.say("Press 1 to investigate further.")
-    gather.say("Press 2 to leave quickly.")
-
-    return str(response)
-
-@app.route("/security-footage", methods=['POST'])
-def security_footage():
-    response = VoiceResponse()
-    response.say("The footage shows a group of people gathered in the food court. But the timestamp is from last night.")
-    response.redirect("/mall")
-
-    return str(response)
-
-@app.route("/underground-mall", methods=['POST'])
-def underground_mall():
-    response = VoiceResponse()
-    response.say("You step into the underground mall. The halls are too clean. The lights flicker on.")
-    response.redirect("/mall")
-
+    response.redirect("/twilio-webhook")
     return str(response)
 
 if __name__ == "__main__":
